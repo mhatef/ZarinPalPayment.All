@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Zarinpal.Core.DTO;
 using Zarinpal.Core.Services;
 using ZarinPalPayment.Core.DTO;
+using ZarinPalPayment.Core.Services;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -18,79 +19,38 @@ namespace ZarinPalPayment.Api.Controllers
     [ApiController]
     public class PaymentController : ControllerBase
     {
-        private readonly IRequestServices _requestServices;
+        private readonly IZarinPalServices _zarinPalPayment;
 
-        public PaymentController(IRequestServices requestServices)
+        public PaymentController(IZarinPalServices zarinPalPayment)
         {
-            _requestServices = requestServices;
+            _zarinPalPayment = zarinPalPayment;
         }
 
 
         // POST api/<PaymentController>
         [HttpPost("[action]")]
-        public async Task<IActionResult> Request([FromBody] ClientRequestVm clientRequest)
+        public async Task<IActionResult> Request([FromBody] BankRequestDTO model)
         {
-            var response = await _requestServices.PaymentRequest(clientRequest);
-            var res2 = response.Item1.Content.ReadAsStringAsync().Result;
-
-            try
+            TerminalResponseDTO response = await _zarinPalPayment.Pay(model);
+            if (response.Success)
             {
-                if (response.Item1.IsSuccessStatusCode)
-                {
-                    PaymentResponseVm res = JsonConvert.DeserializeObject<PaymentResponseVm>
-                        (res2);
-                    if (res.data.code == 100)
-                    {
-                        if (await _requestServices.AddPaymentAuthority(res,response.Item2))
-                        {
-                            return Ok(res);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                PaymentErrorResponse err = JsonConvert.DeserializeObject<PaymentErrorResponse>
-                    (res2);
-                return BadRequest("Response Code : " + err.errors.code
-                                                     + Environment.NewLine +
-                                                     "Response Message : " + err.errors.message);
+                return Ok(response);
             }
 
-            return Problem("Unhandled Exception");
+            return BadRequest(response);
         }
 
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> Verify(VerifyRequestVm request)
+        public async Task<IActionResult> Verify([FromBody] BankRequestDTO model)
         {
-            HttpResponseMessage response = await _requestServices.Verify(request);
-            var res2 = response.Content.ReadAsStringAsync().Result;
-            try
+            TerminalResponseDTO response = await _zarinPalPayment.Verify(model);
+            if (response.Success)
             {
-                if (response.IsSuccessStatusCode)
-                {
-                    VerifyResponse res = JsonConvert.DeserializeObject<VerifyResponse>
-                        (res2);
-                    if (res.data.code == 100 || res.data.code == 101)
-                    {
-                        if (await _requestServices.VerifyRequest(res, request.authority))
-                        {
-                            return Ok(res);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                VerifyErrorResponse err = JsonConvert.DeserializeObject<VerifyErrorResponse>
-                    (res2);
-                return BadRequest("Response Code : " + err.error.code
-                                                     + Environment.NewLine +
-                                                     "Response Message : " + err.error.message);
+                return Ok(response);
             }
 
-            return BadRequest(res2);
+            return BadRequest(response);
         }
 
 

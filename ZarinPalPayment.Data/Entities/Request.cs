@@ -25,6 +25,7 @@ namespace Zarinpal.Data.Entities
         public int ResponseCode { get; set; }
 
         public string ResponseAuthority { get; set; }
+        public string ResponseMessage { get; set; }
 
         public int ReferenceID { get; set; }
 

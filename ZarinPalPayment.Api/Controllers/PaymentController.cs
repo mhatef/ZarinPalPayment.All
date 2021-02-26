@@ -5,9 +5,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Zarinpal.Core.DTO;
-using Zarinpal.Core.Services;
 using ZarinPalPayment.Core.DTO;
 using ZarinPalPayment.Core.Services;
 
@@ -29,9 +26,9 @@ namespace ZarinPalPayment.Api.Controllers
 
         // POST api/<PaymentController>
         [HttpPost("[action]")]
-        public async Task<IActionResult> Request([FromBody] BankRequestDTO model)
+        public IActionResult Request([FromBody] BankRequestDTO model)
         {
-            TerminalResponseDTO response = await _zarinPalPayment.Pay(model);
+            TerminalResponseDTO response = _zarinPalPayment.Pay(model);
             if (response.Success)
             {
                 return Ok(response);
@@ -42,9 +39,9 @@ namespace ZarinPalPayment.Api.Controllers
 
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> Verify([FromBody] BankRequestDTO model)
+        public IActionResult Verify([FromBody] BankRequestDTO model)
         {
-            TerminalResponseDTO response = await _zarinPalPayment.Verify(model);
+            TerminalResponseDTO response = _zarinPalPayment.Verify(model);
             if (response.Success)
             {
                 return Ok(response);

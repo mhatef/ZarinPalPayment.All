@@ -19,41 +19,48 @@ namespace ZarinPalPayment.Data.Migrations
                 .HasAnnotation("ProductVersion", "5.0.3")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-            modelBuilder.Entity("Zarinpal.Data.Entities.Request", b =>
+            modelBuilder.Entity("Zarinpal.Data.Entities.Payment", b =>
                 {
-                    b.Property<int>("RequestID")
+                    b.Property<long>("PaymentID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("bigint")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<long>("PaymentAmount")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("PaymentDescription")
-                        .IsRequired()
+                    b.Property<string>("Message")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ReferenceID")
-                        .HasColumnType("int");
+                    b.Property<string>("Reference")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("RequestDatetime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("RequestStatus")
+                    b.Property<int>("StatusID")
                         .HasColumnType("int");
 
-                    b.Property<string>("ResponseAuthority")
+                    b.Property<string>("TerminalID")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ResponseCode")
-                        .HasColumnType("int");
+                    b.Property<string>("TerminalReference")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("UserID")
-                        .HasColumnType("int");
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("RequestID");
+                    b.Property<string>("additionalData")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.ToTable("Requests");
+                    b.Property<long>("amount")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("callBackUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("PaymentID");
+
+                    b.ToTable("Payments");
                 });
 #pragma warning restore 612, 618
         }

@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Zarinpal.Core.Services;
 using Zarinpal.Data.Context;
 using ZarinPalPayment.Core.Services;
 

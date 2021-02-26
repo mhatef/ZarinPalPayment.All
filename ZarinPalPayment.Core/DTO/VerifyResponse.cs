@@ -11,7 +11,7 @@ namespace ZarinPalPayment.Core.DTO
 
     public class VerifyErrorResponse
     {
-        public error error { get; set; }
+        public errors errors { get; set; }
         
     }
 
@@ -23,7 +23,7 @@ namespace ZarinPalPayment.Core.DTO
 
     }
 
-    public class error
+    public class errors
     {
         public int code { get; set; }
         public string message { get; set; }

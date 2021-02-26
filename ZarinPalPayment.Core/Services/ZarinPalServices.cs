@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Zarinpal.Core.DTO;
@@ -15,7 +14,7 @@ using ZarinPalPayment.Core.Extentions;
 
 namespace ZarinPalPayment.Core.Services
 {
-    public class ZarinPalServices:IZarinPalServices
+    public class ZarinPalServices : IZarinPalServices
     {
 
         private readonly Zarinpal_Db_Context _context;
@@ -30,7 +29,7 @@ namespace ZarinPalPayment.Core.Services
         }
 
 
-        public async Task<TerminalResponseDTO> Pay(BankRequestDTO model)
+        public TerminalResponseDTO Pay(BankRequestDTO model)
         {
             TerminalResponseDTO terminalResponse = new TerminalResponseDTO()
             {
@@ -41,7 +40,7 @@ namespace ZarinPalPayment.Core.Services
             try
             {
 
-                long? id = await CreateRequest(model);
+                long? id = CreateRequest(model);
                 if (id.HasValue)
                 {
                     PaymentRequestVm request = new PaymentRequestVm()
@@ -69,9 +68,14 @@ namespace ZarinPalPayment.Core.Services
                                 (responseContent);
                             if (res.data.code == 100)
                             {
-                                if (await AddPaymentAuthority(res, id.Value))
+                                if (AddPaymentAuthority(res, id.Value))
                                 {
-                                    //TODO Fill terminalResponse
+                                    terminalResponse.Message = res.data.message;
+                                    terminalResponse.Url = response.RequestMessage.RequestUri.AbsoluteUri;
+                                    terminalResponse.Reference = res.data.authority;
+                                    terminalResponse.StatusID = res.data.code;
+                                    terminalResponse.Success = true;
+
                                 }
                             }
                         }
@@ -81,7 +85,11 @@ namespace ZarinPalPayment.Core.Services
                         PaymentErrorResponse err = JsonConvert.DeserializeObject<PaymentErrorResponse>
                             (responseContent);
 
-                        //TODO Fill terminalResponse
+                        terminalResponse.Success = false;
+                        terminalResponse.Message = err.errors.message;
+                        terminalResponse.Url = response.RequestMessage.RequestUri.AbsoluteUri;
+                        terminalResponse.StatusID = err.errors.code;
+
                     }
 
                     return terminalResponse;
@@ -94,7 +102,7 @@ namespace ZarinPalPayment.Core.Services
             }
         }
 
-        public async Task<TerminalResponseDTO> Verify(BankRequestDTO model)
+        public TerminalResponseDTO Verify(BankRequestDTO model)
         {
             TerminalResponseDTO terminalResponse = new TerminalResponseDTO()
             {
@@ -117,26 +125,32 @@ namespace ZarinPalPayment.Core.Services
                 var responseContent = response.Content.ReadAsStringAsync().Result;
                 try
                 {
-                    if (response.IsSuccessStatusCode)
+
+                    VerifyResponse res = JsonConvert.DeserializeObject<VerifyResponse>
+                        (responseContent);
+                    if (res.data.code == 100 || res.data.code == 101)
                     {
-                        VerifyResponse res = JsonConvert.DeserializeObject<VerifyResponse>
-                            (responseContent);
-                        if (res.data.code == 100 || res.data.code == 101)
+                        if (VerifyRequest(res, request.authority))
                         {
-                            if (await VerifyRequest(res, request.authority))
-                            {
-                                //TODO Fill terminalResponse
-                            }
+                            terminalResponse.Message = res.data.message;
+                            terminalResponse.Url = response.RequestMessage.RequestUri.AbsoluteUri;
+                            terminalResponse.Reference = res.data.ref_id.ToString();
+                            terminalResponse.StatusID = res.data.code;
+                            terminalResponse.Success = true;
+
                         }
                     }
+
                 }
                 catch
                 {
                     VerifyErrorResponse err = JsonConvert.DeserializeObject<VerifyErrorResponse>
                         (responseContent);
 
-                    //TODO Fill terminalResponse
-
+                    terminalResponse.Success = false;
+                    terminalResponse.Message = err.errors.message;
+                    terminalResponse.Url = response.RequestMessage.RequestUri.AbsoluteUri;
+                    terminalResponse.StatusID = err.errors.code;
                 }
                 return terminalResponse;
             }
@@ -154,7 +168,7 @@ namespace ZarinPalPayment.Core.Services
 
 
 
-        private async Task<long?> CreateRequest(BankRequestDTO request)
+        private long? CreateRequest(BankRequestDTO request)
         {
             try
             {
@@ -169,9 +183,9 @@ namespace ZarinPalPayment.Core.Services
                     callBackUrl = Configuration.GetGatewayInfo("CallBack")
                 };
 
-                await _context.Payments.AddAsync(payment);
+                _context.Payments.Add(payment);
 
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
 
                 return payment.PaymentID;
             }
@@ -181,16 +195,16 @@ namespace ZarinPalPayment.Core.Services
             }
         }
 
-        private async Task<bool> AddPaymentAuthority(PaymentResponseVm response, long paymentID)
+        private bool AddPaymentAuthority(PaymentResponseVm response, long paymentID)
         {
             try
             {
-                var payment = await _context.Payments.FindAsync(paymentID);
+                var payment = _context.Payments.Find(paymentID);
                 payment.StatusID = (int)RequestStatus.UnVerified;
                 payment.TerminalReference = response.data.authority;
 
                 _context.Payments.Update(payment);
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
 
                 return true;
             }
@@ -200,16 +214,16 @@ namespace ZarinPalPayment.Core.Services
             }
         }
 
-        private async Task<bool> VerifyRequest(VerifyResponse response, string requestAuthority)
+        private bool VerifyRequest(VerifyResponse response, string requestAuthority)
         {
             try
             {
-                var payment = await _context.Payments.SingleAsync(p=>p.TerminalReference == requestAuthority);
+                var payment = _context.Payments.Single(p => p.TerminalReference == requestAuthority);
                 payment.StatusID = (int)RequestStatus.Verified;
                 payment.Reference = response.data.ref_id.ToString();
-                
+
                 _context.Payments.Update(payment);
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
 
                 return true;
             }

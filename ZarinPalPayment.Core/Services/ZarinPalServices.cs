@@ -46,7 +46,7 @@ namespace ZarinPalPayment.Core.Services
                     PaymentRequestVm request = new PaymentRequestVm()
                     {
                         amount = model.amount,
-                        callback_url = Configuration.GetGatewayInfo("CallBack") + model.UserName,
+                        callback_url = Configuration.GetGatewayInfo("CallBack"),
                         description = model.additionalData,
                         email = "",
                         mobile = "",

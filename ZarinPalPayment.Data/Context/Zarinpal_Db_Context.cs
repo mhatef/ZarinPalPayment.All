@@ -13,7 +13,7 @@ namespace Zarinpal.Data.Context
             
         }
 
-        public DbSet<Request> Requests { get; set; }
+        public DbSet<Payment> Payments { get; set; }
 
     }
 }

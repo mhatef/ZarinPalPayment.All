@@ -6,14 +6,15 @@ namespace ZarinPalPayment.Core.DTO
 {
     public class BankRequestDTO
     {
-        public int UserID { get; set; }
-        public string merchant_id { get; set; }
-        public string callback_url { get; set; }
-        public string description { get; set; }
         public long amount { get; set; }
-        public string mobile { get; set; }
-        public string email { get; set; }
-        public string authority { get; set; }
+        public long PaymentID { get; set; }
+        public string UserName { get; set; }
+        public string UserPassword { get; set; }
+        public string TerminalID { get; set; }
+        public string callBackUrl { get; set; }
+        public string additionalData { get; set; }
+        public string TerminalReference { get; set; }
+
 
     }
 }

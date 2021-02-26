@@ -129,7 +129,7 @@ namespace Zarinpal.Core.Services
         {
             try
             {
-                Request _request = new Request()
+                Payment _request = new Payment()
                 {
                     PaymentAmount = request.Amount,
                     PaymentDescription = request.Description,

@@ -34,25 +34,21 @@ namespace ZarinPalPayment.Core.Services
         {
             TerminalResponseDTO terminalResponse = new TerminalResponseDTO()
             {
-                //TODO Fill terminalResponse
+                Success = false,
+                Message = "unhandled exception occurred"
             };
 
             try
             {
-                ClientRequestVm clientRequest = new ClientRequestVm()
-                {
-                    Amount = model.amount,
-                    Description = model.description,
-                    UserID = model.UserID
-                };
-                int? id = await CreateRequest(clientRequest);
+
+                long? id = await CreateRequest(model);
                 if (id.HasValue)
                 {
-                    BankRequestDTO request = new BankRequestDTO()
+                    PaymentRequestVm request = new PaymentRequestVm()
                     {
-                        amount = clientRequest.Amount,
-                        callback_url = Configuration.GetGatewayInfo("CallBack") + model.UserID,
-                        description = clientRequest.Description,
+                        amount = model.amount,
+                        callback_url = Configuration.GetGatewayInfo("CallBack") + model.UserName,
+                        description = model.additionalData,
                         email = "",
                         mobile = "",
                         merchant_id = Configuration.GetGatewayInfo("Merchant")
@@ -102,7 +98,9 @@ namespace ZarinPalPayment.Core.Services
         {
             TerminalResponseDTO terminalResponse = new TerminalResponseDTO()
             {
-                //TODO Fill terminalResponse
+                Success = false,
+                Message = "unhandled exception occurred"
+
             };
 
             try
@@ -110,7 +108,7 @@ namespace ZarinPalPayment.Core.Services
                 VerifyRequestVm request = new VerifyRequestVm()
                 {
                     amount = model.amount,
-                    authority = model.authority,
+                    authority = model.TerminalReference,
                     merchant_id = Configuration.GetGatewayInfo("Merchant")
                 };
                 var jsonBody = JsonConvert.SerializeObject(request);
@@ -156,24 +154,26 @@ namespace ZarinPalPayment.Core.Services
 
 
 
-        private async Task<int?> CreateRequest(ClientRequestVm request)
+        private async Task<long?> CreateRequest(BankRequestDTO request)
         {
             try
             {
-                Request _request = new Request()
+                Payment payment = new Payment()
                 {
-                    PaymentAmount = request.Amount,
-                    PaymentDescription = request.Description,
+                    amount = request.amount,
+                    additionalData = request.additionalData,
                     RequestDatetime = DateTime.Now,
-                    RequestStatus = (int)RequestStatus.OnGoing,
-                    UserID = request.UserID,
+                    StatusID = (int)RequestStatus.OnGoing,
+                    UserName = request.UserName,
+                    TerminalID = Configuration.GetGatewayInfo("Merchant"),
+                    callBackUrl = Configuration.GetGatewayInfo("CallBack")
                 };
 
-                await _context.Requests.AddAsync(_request);
+                await _context.Payments.AddAsync(payment);
 
                 await _context.SaveChangesAsync();
 
-                return _request.RequestID;
+                return payment.PaymentID;
             }
             catch
             {
@@ -181,16 +181,15 @@ namespace ZarinPalPayment.Core.Services
             }
         }
 
-        private async Task<bool> AddPaymentAuthority(PaymentResponseVm response, int requestId)
+        private async Task<bool> AddPaymentAuthority(PaymentResponseVm response, long paymentID)
         {
             try
             {
-                var request = await _context.Requests.FindAsync(requestId);
-                request.RequestStatus = (int)RequestStatus.UnVerified;
-                request.ResponseAuthority = response.data.authority;
-                request.ResponseCode = response.data.code;
+                var payment = await _context.Payments.FindAsync(paymentID);
+                payment.StatusID = (int)RequestStatus.UnVerified;
+                payment.TerminalReference = response.data.authority;
 
-                _context.Requests.Update(request);
+                _context.Payments.Update(payment);
                 await _context.SaveChangesAsync();
 
                 return true;
@@ -205,12 +204,11 @@ namespace ZarinPalPayment.Core.Services
         {
             try
             {
-                var request = await _context.Requests.SingleAsync(r => r.ResponseAuthority == requestAuthority);
-                request.RequestStatus = (int)RequestStatus.Verified;
-                request.ReferenceID = (int)response.data.ref_id;
-                request.ResponseCode = response.data.code;
-
-                _context.Requests.Update(request);
+                var payment = await _context.Payments.SingleAsync(p=>p.TerminalReference == requestAuthority);
+                payment.StatusID = (int)RequestStatus.Verified;
+                payment.Reference = response.data.ref_id.ToString();
+                
+                _context.Payments.Update(payment);
                 await _context.SaveChangesAsync();
 
                 return true;

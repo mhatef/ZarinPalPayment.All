@@ -12,8 +12,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Zarinpal.Core.Services;
 using Zarinpal.Data.Context;
+using ZarinPalPayment.Core.Services;
 
 namespace ZarinPalPayment.Api
 {
@@ -48,7 +48,7 @@ namespace ZarinPalPayment.Api
 
             #region IoT
 
-            services.AddTransient<IRequestServices,RequestServices>();
+            services.AddScoped<IZarinPalServices,ZarinPalServices>();
 
             #endregion
 

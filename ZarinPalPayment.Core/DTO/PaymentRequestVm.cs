@@ -13,14 +13,7 @@ namespace Zarinpal.Core.DTO
         public long amount { get; set; }
         public string mobile { get; set; }
         public string email { get; set; }
-
-
-        //public PaymentRequestVm(int Amount, String Description)
-        //{
-        //    this.amount = Amount;
-        //    this.description = Description;
-        //}
-
+        
 
     }
 }

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace ZarinPalPayment.Data.Migrations
 {
-    public partial class mig_InitDb : Migration
+    public partial class mig_Init : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

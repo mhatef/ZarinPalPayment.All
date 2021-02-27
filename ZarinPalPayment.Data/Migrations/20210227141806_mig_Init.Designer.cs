@@ -10,8 +10,8 @@ using Zarinpal.Data.Context;
 namespace ZarinPalPayment.Data.Migrations
 {
     [DbContext(typeof(Zarinpal_Db_Context))]
-    [Migration("20210226144706_mig_InitDb")]
-    partial class mig_InitDb
+    [Migration("20210227141806_mig_Init")]
+    partial class mig_Init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

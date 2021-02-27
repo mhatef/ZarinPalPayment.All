@@ -73,6 +73,7 @@ namespace Zarinpal.Core.Services
         {
             try
             {
+                request.merchant_id = Configuration.GetGatewayInfo("Merchant");
                 var jsonBody = JsonConvert.SerializeObject(request);
                 var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 var response = _client.PostAsync(Configuration.GetGatewayInfo("Verify_Url"), content).Result;

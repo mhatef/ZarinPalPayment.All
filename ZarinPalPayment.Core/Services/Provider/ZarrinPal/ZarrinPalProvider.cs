@@ -1,32 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Zarinpal.Core.DTO;
-using Zarinpal.Core.Enums;
-using Zarinpal.Data.Context;
-using Zarinpal.Data.Entities;
 using ZarinPalPayment.Core.DTO;
-using ZarinPalPayment.Core.Extentions;
 
-namespace ZarinPalPayment.Core.Services
+namespace ZarinPalPayment.Core.Services.Provider.ZarrinPal
 {
-    public class ZarinPalServices : IZarinPalServices
+    public class ZarrinPalProvider
     {
-
-        private readonly Zarinpal_Db_Context _context;
-        public IConfiguration Configuration { get; }
+        private PaymentGatewayClient _gatway;
         private readonly HttpClient _client;
 
-        public ZarinPalServices(Zarinpal_Db_Context context, IConfiguration configuration)
+        public ZarrinPalProvider()
         {
-            _context = context;
-            Configuration = configuration;
+            _gatway = new PaymentGatewayClient();
             _client = new HttpClient();
         }
+
 
 
         public TerminalResponseDTO Pay(BankRequestDTO model)
@@ -50,13 +42,13 @@ namespace ZarinPalPayment.Core.Services
                         description = model.additionalData,
                         email = "",
                         mobile = "",
-                        merchant_id = model.TerminalID
+                        merchant_id = model.TerminalId
 
                     };
 
                     var jsonBody = JsonConvert.SerializeObject(request);
                     var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                    var response = _client.PostAsync(Configuration.GetGatewayInfo("Request_Url"), content).Result;
+                    var response = _client.PostAsync("https://api.zarinpal.com/pg/v4/payment/request.json", content).Result;
                     var responseContent = response.Content.ReadAsStringAsync().Result;
 
 
@@ -71,7 +63,7 @@ namespace ZarinPalPayment.Core.Services
                                 if (AddPaymentAuthority(res, id.Value))
                                 {
                                     terminalResponse.Message = res.data.message;
-                                    terminalResponse.Url = Configuration.GetGatewayInfo("StartPayment_Url") + res.data.authority;
+                                    terminalResponse.Url = "https://www.zarinpal.com/pg/StartPay/"+res.data.authority;
                                     terminalResponse.Reference = res.data.authority;
                                     terminalResponse.StatusID = res.data.code;
                                     terminalResponse.Success = true;
@@ -117,25 +109,25 @@ namespace ZarinPalPayment.Core.Services
                 {
                     amount = model.amount,
                     authority = model.TerminalReference,
-                    merchant_id = model.TerminalID
+                    merchant_id = model.TerminalId
                 };
                 var jsonBody = JsonConvert.SerializeObject(request);
                 var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                var response = _client.PostAsync(Configuration.GetGatewayInfo("Verify_Url"), content).Result;
+                var response = _client.PostAsync("https://api.zarinpal.com/pg/v4/payment/verify.json", content).Result;
                 var responseContent = response.Content.ReadAsStringAsync().Result;
                 try
                 {
 
                     VerifyResponse res = JsonConvert.DeserializeObject<VerifyResponse>
                         (responseContent);
-                    if (res.data.code == 100 || res.data.code == 101)
+                    if (res.datas.code == 100 || res.datas.code == 101)
                     {
                         if (VerifyRequest(res, request.authority))
                         {
-                            terminalResponse.Message = res.data.message;
+                            terminalResponse.Message = res.datas.message;
                             terminalResponse.Url = response.RequestMessage.RequestUri.AbsoluteUri;
-                            terminalResponse.Reference = res.data.ref_id.ToString();
-                            terminalResponse.StatusID = res.data.code;
+                            terminalResponse.Reference = res.datas.ref_id.ToString();
+                            terminalResponse.StatusID = res.datas.code;
                             terminalResponse.Success = true;
 
                         }
@@ -163,7 +155,7 @@ namespace ZarinPalPayment.Core.Services
         public void Dispose()
         {
             _client.Dispose();
-            _context.DisposeAsync();
+            //_context.DisposeAsync();
         }
 
 
@@ -172,22 +164,23 @@ namespace ZarinPalPayment.Core.Services
         {
             try
             {
-                Payment payment = new Payment()
-                {
-                    amount = request.amount,
-                    additionalData = request.additionalData,
-                    RequestDatetime = DateTime.Now,
-                    StatusID = (int)RequestStatus.OnGoing,
-                    UserName = request.UserName,
-                    TerminalID = Configuration.GetGatewayInfo("Merchant"),
-                    callBackUrl = Configuration.GetGatewayInfo("CallBack")
-                };
+                //Payment payment = new Payment()
+                //{
+                //    amount = request.amount,
+                //    additionalData = request.additionalData,
+                //    RequestDatetime = DateTime.Now,
+                //    StatusID = (int)RequestStatus.OnGoing,
+                //    UserName = request.UserName,
+                //    TerminalID = Configuration.GetGatewayInfo("Merchant"),
+                //    callBackUrl = Configuration.GetGatewayInfo("CallBack")
+                //};
 
-                _context.Payments.Add(payment);
+                //_context.Payments.Add(payment);
 
-                _context.SaveChanges();
+                //_context.SaveChanges();
 
-                return payment.PaymentID;
+                //return payment.PaymentID;
+                return 1;
             }
             catch
             {
@@ -199,12 +192,12 @@ namespace ZarinPalPayment.Core.Services
         {
             try
             {
-                var payment = _context.Payments.Find(paymentID);
-                payment.StatusID = (int)RequestStatus.UnVerified;
-                payment.TerminalReference = response.data.authority;
+                //var payment = _context.Payments.Find(paymentID);
+                //payment.StatusID = (int)RequestStatus.UnVerified;
+                //payment.TerminalReference = response.data.authority;
 
-                _context.Payments.Update(payment);
-                _context.SaveChanges();
+                //_context.Payments.Update(payment);
+                //_context.SaveChanges();
 
                 return true;
             }
@@ -218,12 +211,12 @@ namespace ZarinPalPayment.Core.Services
         {
             try
             {
-                var payment = _context.Payments.Single(p => p.TerminalReference == requestAuthority);
-                payment.StatusID = (int)RequestStatus.Verified;
-                payment.Reference = response.data.ref_id.ToString();
+                //var payment = _context.Payments.Single(p => p.TerminalReference == requestAuthority);
+                //payment.StatusID = (int)RequestStatus.Verified;
+                //payment.Reference = response.data.ref_id.ToString();
 
-                _context.Payments.Update(payment);
-                _context.SaveChanges();
+                //_context.Payments.Update(payment);
+                //_context.SaveChanges();
 
                 return true;
             }
@@ -233,4 +226,5 @@ namespace ZarinPalPayment.Core.Services
             }
         }
     }
+
 }
